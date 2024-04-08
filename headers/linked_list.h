@@ -23,11 +23,11 @@ public:
 
 private:
   size_type count;
-  BaseNode<T> *head;
-  BaseNode<T> *tail;
+  Node<T> *head;
+  Node<T> *tail;
 
 public:
-  LinkedList<T>() : count(0), head(new BaseNode<T>()), tail(new BaseNode<T>()) {
+  LinkedList<T>() : count(0), head(new Node<T>()), tail(new Node<T>()) {
     head->next = tail;
     tail->prev = head;
   };
@@ -43,7 +43,7 @@ public:
     if (&other == this)
       return (*this);
 
-    if (count != 0)
+    if (empty() == false)
       clear();
 
     this->count = other.count;
@@ -59,7 +59,7 @@ public:
 
 public:
   reference front() {
-    if (count == 0) {
+    if (empty()) {
       throw std::runtime_error("List is empty");
     }
 
@@ -67,7 +67,7 @@ public:
   }
 
   const_reference front() const {
-    if (count == 0) {
+    if (empty()) {
       throw std::runtime_error("List is empty");
     }
 
@@ -75,7 +75,7 @@ public:
   }
 
   reference back() {
-    if (count == 0) {
+    if (empty()) {
       throw std::runtime_error("List is empty");
     }
 
@@ -83,7 +83,7 @@ public:
   }
 
   const_reference back() const {
-    if (count == 0) {
+    if (empty()) {
       throw std::runtime_error("List is empty");
     }
 
@@ -110,27 +110,27 @@ public:
 
 public:
   iterator insert(const_iterator pos, const T &value) {
-    if (pos._curr_ptr == cbegin()._curr_ptr->prev)
+    if (pos._ptr == cbegin()._ptr->prev)
       throw std::runtime_error("Insert before the head");
 
-    auto *_node = new BaseNode<T>(value);
-    _node->prev = pos._curr_ptr->prev;
-    _node->next = pos._curr_ptr;
-    pos._curr_ptr->prev->next = _node;
-    pos._curr_ptr->prev = _node;
+    auto *_node = new Node<T>(value);
+    _node->prev = pos._ptr->prev;
+    _node->next = pos._ptr;
+    pos._ptr->prev->next = _node;
+    pos._ptr->prev = _node;
     count++;
     return iterator(*_node);
   }
 
   iterator insert(const_iterator pos, T &&value) {
-    if (pos._curr_ptr == cbegin()._curr_ptr->prev)
+    if (pos._ptr == cbegin()._ptr->prev)
       throw std::runtime_error("Insert past the tail");
 
-    auto *_node = new BaseNode<T>(std::move(value));
-    _node->prev = pos._curr_ptr->prev;
-    _node->next = pos._curr_ptr;
-    pos._curr_ptr->prev->next = _node;
-    pos._curr_ptr->prev = _node;
+    auto *_node = new Node<T>(std::move(value));
+    _node->prev = pos._ptr->prev;
+    _node->next = pos._ptr;
+    pos._ptr->prev->next = _node;
+    pos._ptr->prev = _node;
     count++;
     return iterator(*_node);
   }
@@ -144,16 +144,16 @@ public:
 
 public:
   iterator erase(const_iterator pos) {
-    if (count == 0)
+    if (empty())
       throw std::runtime_error("List is empty");
 
     auto result = pos;
     ++result;
-    pos._curr_ptr->prev->next = pos._curr_ptr->next;
-    pos._curr_ptr->next->prev = pos._curr_ptr->prev;
-    delete (pos._curr_ptr);
+    pos._ptr->prev->next = pos._ptr->next;
+    pos._ptr->next->prev = pos._ptr->prev;
+    delete (pos._ptr);
     count--;
-    return iterator(*(result._curr_ptr));
+    return iterator(*(result._ptr));
   }
 
   void pop_back() { erase(--cend()); }
@@ -164,9 +164,9 @@ public:
     if (count == 0 || count == 1)
       return;
 
-    BaseNode<T> *cached_tail = head;
-    BaseNode<T> *current = head;
-    BaseNode<T> *temp = nullptr;
+    Node<T> *cached_tail = head;
+    Node<T> *current = head;
+    Node<T> *temp = nullptr;
 
     while (current != nullptr) {
       temp = current->prev;
@@ -181,11 +181,12 @@ public:
 
 public:
   void clear() noexcept {
-    if (count == 0)
+    if (empty())
       return;
 
-    for (; count != 0;)
+    while (empty() == false) {
       pop_back();
+    }
 
     head->next = tail;
     tail->prev = head;
