@@ -1,18 +1,19 @@
 #pragma once
 
-template <typename T> class BaseNode {
+template <typename T> class Node {
 public:
-  BaseNode *next;
-  BaseNode *prev;
+  Node *next;
+  Node *prev;
 
 public:
-  BaseNode() : _data() {}
-  explicit BaseNode(const T &data) : _data(data) {}
-  explicit BaseNode(T &&data) : _data(std::move(data)) {}
-  virtual ~BaseNode() = default;
+  Node() : _data() {}
+  explicit Node(const T &data) : _data(data) {}
+  explicit Node(T &&data) : _data(std::move(data)) {}
+  virtual ~Node() = default;
 
 public:
   T &getData() { return _data; }
+  T const &getData() const { return _data; }
 
   void setData(const T &data) { _data = data; }
 

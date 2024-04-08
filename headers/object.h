@@ -3,6 +3,7 @@
 #include "linked_list.h"
 #include <atomic>
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -15,12 +16,12 @@ public:
 
   std::string virtual ToString() const noexcept = 0;
 
-  Object([[maybe_unused]] Object const &object) { _objectCounter.fetch_add(1); }
+  Object([[maybe_unused]] Object const &object) { _objectCounter++; }
 
-  virtual ~Object() { _objectCounter.fetch_add(-1); };
+  virtual ~Object() { _objectCounter--; };
 
 protected:
-  Object() { _objectCounter.fetch_add(1); };
+  Object() { _objectCounter++; };
 
 private:
   inline static std::atomic_int64_t _objectCounter;
@@ -49,44 +50,23 @@ const size_t TaskTypeSize = 6;
 
 class Task : public Object {
 public:
-  Task() : Object(){};
-
   void virtual Execute() = 0;
   TaskType virtual GetTaskType() const noexcept = 0;
   bool virtual CanHaveResult() const noexcept = 0;
 };
 
-enum OpType { Add, Subtract, Multiply, Divide };
-const size_t OpTypeSize = 4;
-
-template <typename T> class BinTask : public Task {
+template <typename T> class BinArithmeticTask : public Task, NamedObject {
 public:
   static_assert(std::is_integral<T>() || std::is_floating_point<T>());
 
-  BinTask(T left, T right, OpType opType, NamedObject const &operationName)
-      : _leftOperand(left), _rightOperand(right), _operationType(opType),
-        _operationName(operationName){};
+  BinArithmeticTask(T left, T right,
+                    std::function<std::optional<T>(T, T)> binOperator,
+                    std::string const &operationName)
+      : NamedObject(operationName), _leftOperand(left), _rightOperand(right),
+        _binOperator(binOperator){};
 
   void Execute() override {
-    switch (_operationType) {
-    case Add:
-      _result = _leftOperand + _rightOperand;
-      break;
-    case Subtract:
-      _result = _leftOperand - _rightOperand;
-      break;
-    case Multiply:
-      _result = _leftOperand * _rightOperand;
-      break;
-    case Divide:
-      if (std::abs(_rightOperand) > 0) {
-        _result = _leftOperand / _rightOperand;
-      }
-      break;
-
-    default:
-      break;
-    }
+    _result = _binOperator(_leftOperand, _rightOperand);
   }
 
   std::string ToString() const noexcept override {
@@ -104,9 +84,7 @@ public:
 private:
   T _leftOperand;
   T _rightOperand;
-  OpType _operationType;
-  NamedObject _operationName;
-
+  std::function<std::optional<T>(T, T)> _binOperator;
   std::optional<T> _result;
 };
 

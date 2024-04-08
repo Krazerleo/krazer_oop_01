@@ -2,10 +2,50 @@
 #include "headers/object.h"
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <random>
 #include <ranges>
 
 using namespace HomeTask;
+
+enum OpType { Add, Subtract, Multiply, Divide };
+const size_t OpTypeSize = 4;
+
+template <typename T>
+std::function<std::optional<T>(T, T)>
+GetBinaryArithmeticOperator(OpType opType) {
+  static_assert(std::is_integral<T>() || std::is_floating_point<T>());
+
+  static std::function<std::optional<T>(T, T)> AddOperator(
+      [](T arg1, T arg2) -> std::optional<T> { return {arg1 + arg2}; });
+
+  static std::function<std::optional<T>(T, T)> MinusOperator(
+      [](T arg1, T arg2) -> std::optional<T> { return {arg1 - arg2}; });
+
+  static std::function<std::optional<T>(T, T)> MultiplyOperator(
+      [](T arg1, T arg2) -> std::optional<T> { return {arg1 * arg2}; });
+
+  static std::function<std::optional<T>(T, T)> DivideOperator(
+      [](T arg1, T arg2) -> std::optional<T> {
+        double const Tolerance = 1e-9;
+        if (std::abs(arg2) > Tolerance) {
+          return arg1 / arg2;
+        }
+
+        return {};
+      });
+
+  switch (opType) {
+  case OpType::Add:
+    return AddOperator;
+  case OpType::Subtract:
+    return MinusOperator;
+  case OpType::Multiply:
+    return MultiplyOperator;
+  case OpType::Divide:
+    return DivideOperator;
+  }
+}
 
 std::unique_ptr<Task>
 GetRandomTask(LinkedList<std::unique_ptr<Task>> &container) {
@@ -27,10 +67,11 @@ GetRandomTask(LinkedList<std::unique_ptr<Task>> &container) {
     std::uniform_int_distribution<int16_t> operandRange(MIN_OPERAND_VALUE,
                                                         MAX_OPERAND_VALUE);
 
-    return std::make_unique<BinTask<int16_t>>(
+    return std::make_unique<BinArithmeticTask<int16_t>>(
         operandRange(randMT), operandRange(randMT),
-        static_cast<OpType>(operatorRange(randMT)),
-        NamedObject("really good name"));
+        GetBinaryArithmeticOperator<int16_t>(
+            static_cast<OpType>(operatorRange(randMT))),
+        "really good name");
   }
   case TaskType::AddTaskT: {
     auto addedTask = GetRandomTask(container);
@@ -74,10 +115,10 @@ int main(int, char **) {
     logContainer.push_back(it->ToString());
   }
 
-  for (auto &log : logContainer) {
+  for (auto const &log : logContainer) {
     std::cout << log;
   }
 
   std::cout << "\nObjects count after cleaning: "
-            << Object::GetAllExistingObjectsCount();
+            << Object::GetAllExistingObjectsCount() << "\n";
 }
